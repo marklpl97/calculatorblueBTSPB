@@ -265,7 +265,7 @@
                     <!-- Contact -->
                     <div class="bg-gradient-to-r from-brown-light to-brown-medium rounded-lg p-5 text-center mb-6">
                         <p class="text-gray-800 text-base">
-                            <span style="font-weight: 600; font-size: 1.05rem;">Ваш личный менеджер по продажам компании BALT TENT:</span>
+                            <span style="font-weight: 600; font-size: 1.05rem;">Ваш личный менеджер по продажам компании OKTENT:</span>
                             <span class="font-bold">тел +7993-637-79-24</span>
                             <a href="http://www.balt-tent.ru" target="_blank" class="text-brown-dark hover:underline ml-2">www.balt-tent.ru</a>
                         </p>
@@ -685,35 +685,48 @@
             document.getElementById('strapQtyDisplay').textContent = `${strapQty} шт`;
             document.getElementById('strapCostDisplay').textContent = `${strapCost.toLocaleString()} руб`;
            
-            // Summary Section
+            // === ИСПРАВЛЕННЫЙ БЛОК: SUMMARY SECTION ===
             summarySection.innerHTML = '';
-            const totalWithDelivery = preliminaryCost + deliveryPrice[city];
             
+            let finalMountingCost = 0;
             let mountingDisplay;
+
             if (mountType === 'без монтажа') {
                 mountingDisplay = 'Самомонтаж';
+                finalMountingCost = 0;
             } else if (mountType === 'оба') {
                 mountingDisplay = `Дерево: ${adjustedWoodMounting.toLocaleString()} руб / Металл: ${adjustedMetalMounting.toLocaleString()} руб`;
+                // Если выбрано "оба", суммируем оба варианта для итоговой сметы (или можно взять max, если это альтернатива)
+                finalMountingCost = adjustedWoodMounting + adjustedMetalMounting; 
             } else if (mountType === 'деревянная поверхность') {
                 mountingDisplay = `${adjustedWoodMounting.toLocaleString()} руб`;
+                finalMountingCost = adjustedWoodMounting;
             } else {
                 mountingDisplay = `${adjustedMetalMounting.toLocaleString()} руб`;
+                finalMountingCost = adjustedMetalMounting;
             }
             
+            // Теперь итоговая сумма ВКЛЮЧАЕТ: материалы + выбранный монтаж + доставку
+            const grandTotal = preliminaryCost + finalMountingCost + deliveryPrice[city];
+
             const summaryDiv = document.createElement('div');
             summaryDiv.className = 'bg-light-card p-4 rounded-lg border-2 border-gold mt-4';
             summaryDiv.innerHTML = `<div class="text-[#1E3A5F] text-base space-y-4">
                 <div class="flex justify-between items-center border-b border-[#1E3A5F] pb-3">
-                    <span class="font-semibold text-[#1E3A5F]">Стоимость:</span>
+                    <span class="font-semibold text-[#1E3A5F]">Стоимость материалов (окна, ремешки, молния):</span>
                     <span class="font-bold text-lg text-[#1E3A5F]">${preliminaryCost.toLocaleString()} руб</span>
                 </div>
                 <div class="flex justify-between items-center border-b border-[#1E3A5F] pb-3">
-                    <span class="font-bold text-[#1E3A5F]">Общая стоимость с доставкой:</span>
-                    <span class="font-bold text-lg text-[#1E3A5F]">${totalWithDelivery.toLocaleString()} руб</span>
-                </div>
-                <div class="flex justify-between items-center pt-2">
                     <span class="font-semibold text-[#1E3A5F]">Стоимость монтажа${mountType !== 'оба' && mountType !== 'без монтажа' ? ' (' + mountType + ')' : ''}${additionalCostMounting > 0 ? ' (+доп.)' : ''}:</span>
                     <span class="font-bold text-lg text-[#1E3A5F]">${mountingDisplay}</span>
+                </div>
+                <div class="flex justify-between items-center border-b border-[#1E3A5F] pb-3">
+                    <span class="font-semibold text-[#1E3A5F]">Доставка:</span>
+                    <span class="font-bold text-lg text-[#1E3A5F]">${deliveryPrice[city].toLocaleString()} руб</span>
+                </div>
+                <div class="flex justify-between items-center pt-2 bg-[#1E3A5F] text-white p-3 rounded-lg mt-2">
+                    <span class="font-bold text-xl">ИТОГОВАЯ СТОИМОСТЬ:</span>
+                    <span class="font-bold text-2xl">${grandTotal.toLocaleString()} руб</span>
                 </div>
             </div>`;
             summarySection.appendChild(summaryDiv);
