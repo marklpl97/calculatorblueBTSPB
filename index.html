@@ -190,6 +190,14 @@
                         <option value="нет">Нет</option><option value="да">Да</option>
                     </select>
                 </div>
+                                <!-- Delivery -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Доставка</label>
+                    <select id="deliveryOption" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brown-dark focus:border-transparent text-base">
+                        <option value="да">Да</option>
+                        <option value="нет">Нет</option>
+                    </select>
+                </div>
                 <!-- Color Selection -->
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Цвет люверсов</label>
@@ -332,6 +340,7 @@
         const mountTypeSelect = document.getElementById('mountType');
         const zipperLengthInput = document.getElementById('zipperLength');
         const advancePaidSelect = document.getElementById('advancePaid');
+        const deliveryOptionSelect = document.getElementById('deliveryOption');
         const colorOptionSelect = document.getElementById('colorOption');
         const additionalCostWindowsInput = document.getElementById('additionalCostWindows');
         const additionalCostMountingInput = document.getElementById('additionalCostMounting');
@@ -558,6 +567,7 @@
             const additionalCostWindows = parseFloat(additionalCostWindowsInput.value) || 0;
             const additionalCostMounting = parseFloat(additionalCostMountingInput.value) || 0;
             const selectedColor = colorOptionSelect.value;
+            const deliveryOption = deliveryOptionSelect.value;
            
             if (!city) {
                 resultsContainer.classList.add('hidden');
@@ -707,7 +717,8 @@
             }
             
             // Теперь итоговая сумма ВКЛЮЧАЕТ: материалы + выбранный монтаж + доставку
-            const grandTotal = preliminaryCost + finalMountingCost + deliveryPrice[city];
+            const deliveryCost = deliveryOption === 'да' ? deliveryPrice[city] : 0;
+            const grandTotal = preliminaryCost + finalMountingCost + deliveryCost;
 
             const summaryDiv = document.createElement('div');
             summaryDiv.className = 'bg-light-card p-4 rounded-lg border-2 border-gold mt-4';
@@ -720,10 +731,11 @@
                     <span class="font-semibold text-[#1E3A5F]">Стоимость монтажа${mountType !== 'оба' && mountType !== 'без монтажа' ? ' (' + mountType + ')' : ''}${additionalCostMounting > 0 ? ' (+доп.)' : ''}:</span>
                     <span class="font-bold text-lg text-[#1E3A5F]">${mountingDisplay}</span>
                 </div>
+                                ${deliveryOption === 'да' ? `
                 <div class="flex justify-between items-center border-b border-[#1E3A5F] pb-3">
-                    <span class="font-semibold text-[#1E3A5F]">Доставка(если нужна):</span>
+                    <span class="font-semibold text-[#1E3A5F]">Доставка:</span>
                     <span class="font-bold text-lg text-[#1E3A5F]">${deliveryPrice[city].toLocaleString()} руб</span>
-                </div>
+                </div>` : ''}
                 <div class="flex justify-between items-center pt-2 bg-[#1E3A5F] text-white p-3 rounded-lg mt-2">
                     <span class="font-bold text-xl">ИТОГОВАЯ СТОИМОСТЬ:</span>
                     <span class="font-bold text-2xl">${grandTotal.toLocaleString()} руб</span>
@@ -832,6 +844,7 @@
             toggleQRCode();
             if (!resultsContainer.classList.contains('hidden')) calculateResults();
         });
+        deliveryOptionSelect.addEventListener('change', calculateResults);
         downloadPdfBtn.addEventListener('click', generatePDF);
         addRowBtn.addEventListener('click', addDimensionRow);
        
