@@ -6,6 +6,7 @@
     <title>РАСЧЕТ СТОИМОСТИ ОКОН ПВХ — OKTENT</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" integrity="sha512-GsLlZN/3F2ErC5ifS5QtgpiJtWd43JWSuIgh7mbzZ8zBps+dvLusV+eNQATqgA/HdeKFVgA5v3S/cIrLF7QnIg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
         tailwind.config = {
             theme: {
@@ -231,6 +232,12 @@
                     📄 Скачать коммерческое предложение (PDF)
                 </button>
             </div>
+            <!-- Download PNG Button -->
+            <div id="pngDownloadBtnWrapper" class="flex justify-center mt-2 mb-4 no-print hidden">
+                <button id="downloadPngBtn" class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-bold py-3 px-8 rounded-xl shadow-lg download-btn flex items-center gap-2 text-lg">
+                    🖼️ Скачать страницы PNG
+                </button>
+            </div>
         </div>
 
 
@@ -351,6 +358,8 @@
         const infoList = document.getElementById('infoList');
         const pdfDownloadBtnWrapper = document.getElementById('pdfDownloadBtnWrapper');
         const downloadPdfBtn = document.getElementById('downloadPdfBtn');
+        const pngDownloadBtnWrapper = document.getElementById('pngDownloadBtnWrapper');
+        const downloadPngBtn = document.getElementById('downloadPngBtn');
         const qrSection = document.getElementById('qrSection');
         const windowDetailsList = document.getElementById('windowDetailsList');
         const summarySection = document.getElementById('summarySection');
@@ -573,6 +582,7 @@
                 resultsContainer.classList.add('hidden');
                 noResultsMessage.classList.remove('hidden');
                 pdfDownloadBtnWrapper.classList.add('hidden');
+                pngDownloadBtnWrapper.classList.add('hidden');
                 return;
             }
 
@@ -586,6 +596,7 @@
                 resultsContainer.classList.add('hidden');
                 noResultsMessage.classList.remove('hidden');
                 pdfDownloadBtnWrapper.classList.add('hidden');
+                pngDownloadBtnWrapper.classList.add('hidden');
                 return;
             }
 
@@ -605,6 +616,7 @@
                 resultsContainer.classList.add('hidden');
                 noResultsMessage.classList.remove('hidden');
                 pdfDownloadBtnWrapper.classList.add('hidden');
+                pngDownloadBtnWrapper.classList.add('hidden');
                 return;
             }
 
@@ -773,6 +785,7 @@
             resultsContainer.classList.remove('hidden');
             noResultsMessage.classList.add('hidden');
             pdfDownloadBtnWrapper.classList.remove('hidden');
+            pngDownloadBtnWrapper.classList.remove('hidden');
         }
         
         function generatePDF() {
@@ -810,6 +823,89 @@
                 alert("Ошибка при создании PDF. Попробуйте снова.");
             });
         }
+
+async function generatePNGs() {
+    const element = document.getElementById('pdfExportArea');
+    if (!element) return;
+
+    const btn = downloadPngBtn;
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '⏳ Генерация PNG...';
+    btn.disabled = true;
+
+    try {
+        // Проверяем, что библиотека загрузилась
+        if (typeof html2canvas === 'undefined') {
+            throw new Error('Библиотека html2canvas не загружена. Проверьте подключение CDN.');
+        }
+
+        const scale = 2;
+        const canvas = await html2canvas(element, {
+            scale: scale,
+            useCORS: true,
+            allowTaint: false,      // НЕ разрешаем "загрязнять" canvas — иначе toDataURL упадёт
+            backgroundColor: '#F0F4FA',
+            logging: true,          // включим лог, чтобы видеть проблемы с картинками
+            scrollY: 0,
+            imageTimeout: 15000,    // ждём загрузки картинок до 15 сек
+            onclone: (clonedDoc) => {
+                // На всякий случай убираем проблемные изображения, если они не загрузились
+                clonedDoc.querySelectorAll('img').forEach(img => {
+                    if (!img.complete || img.naturalWidth === 0) {
+                        console.warn('Изображение не загрузилось и будет скрыто:', img.src);
+                        img.style.visibility = 'hidden';
+                    }
+                });
+            }
+        });
+
+        const a4HeightPx = Math.round(297 * 96 / 25.4); // ~1123 CSS px
+        const pageHeightPx = a4HeightPx * scale;
+
+        const totalHeight = canvas.height;
+        const pageCount = Math.ceil(totalHeight / pageHeightPx);
+
+        for (let i = 0; i < pageCount; i++) {
+            const sourceY = i * pageHeightPx;
+            const sourceHeight = Math.min(pageHeightPx, totalHeight - sourceY);
+
+            const pageCanvas = document.createElement('canvas');
+            pageCanvas.width = canvas.width;
+            pageCanvas.height = pageHeightPx;
+
+            const ctx = pageCanvas.getContext('2d');
+            ctx.fillStyle = '#F0F4FA';
+            ctx.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+
+            ctx.drawImage(
+                canvas,
+                0, sourceY, canvas.width, sourceHeight,
+                0, 0, canvas.width, sourceHeight
+            );
+
+            const dataUrl = pageCanvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = `Коммерческое_предложение_OKTENT_страница_${i + 1}.png`;
+            link.href = dataUrl;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    } catch (err) {
+        console.error("PNG error (подробно):", err);
+        console.error("Имя ошибки:", err.name);
+        console.error("Сообщение:", err.message);
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+        alert("Ошибка при создании PNG: " + (err.message || err.name || 'неизвестная ошибка') +
+              "\n\nОткройте консоль (F12) для подробностей.");
+    }
+}
        
         // Event Listeners
         citySelect.addEventListener('change', calculateResults);
@@ -846,6 +942,7 @@
         });
         deliveryOptionSelect.addEventListener('change', calculateResults);
         downloadPdfBtn.addEventListener('click', generatePDF);
+        downloadPngBtn.addEventListener('click', generatePNGs);
         addRowBtn.addEventListener('click', addDimensionRow);
        
         initializeDimensions();
